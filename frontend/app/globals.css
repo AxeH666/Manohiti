@@ -1,0 +1,126 @@
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #fcf9f8;
+    --foreground: #1c1b1b;
+
+    --surface: #fdf8f8;
+    --surface-dim: #ddd9d8;
+    --surface-bright: #fdf8f8;
+    --surface-container-lowest: #ffffff;
+    --surface-container-low: #f7f2f2;
+    --surface-container: #f1edec;
+    --surface-container-high: #ece7e7;
+    --surface-container-highest: #e6e1e1;
+    --surface-variant: #e6e1e1;
+
+    --on-surface: #1c1b1b;
+    --on-surface-variant: #42493f;
+    --inverse-surface: #313030;
+    --inverse-on-surface: #f4f0ef;
+
+    --outline: #72796f;
+    --outline-variant: #c1c9bd;
+    --surface-tint: #3b683b;
+
+    --primary: #002405;
+    --on-primary: #ffffff;
+    --primary-container: #0d3b13;
+    --on-primary-container: #77a773;
+    --inverse-primary: #a1d39c;
+    --primary-fixed: #bcf0b6;
+    --primary-fixed-dim: #a1d39c;
+    --on-primary-fixed: #002205;
+    --on-primary-fixed-variant: #245025;
+
+    --secondary: #a23e19;
+    --on-secondary: #ffffff;
+    --secondary-container: #fe8358;
+    --on-secondary-container: #701f00;
+    --secondary-fixed: #ffdbd0;
+    --secondary-fixed-dim: #ffb59d;
+    --on-secondary-fixed: #390c00;
+    --on-secondary-fixed-variant: #822702;
+
+    --tertiary: #735c00;
+    --on-tertiary: #ffffff;
+    --tertiary-container: #c5a84d;
+    --on-tertiary-container: #4e3d00;
+    --tertiary-fixed: #ffe085;
+    --tertiary-fixed-dim: #e3c466;
+    --on-tertiary-fixed: #231b00;
+    --on-tertiary-fixed-variant: #574500;
+
+    --error: #ba1a1a;
+    --on-error: #ffffff;
+    --error-container: #ffdad6;
+    --on-error-container: #93000a;
+
+    --deep-forest: #0d2622;
+    --vibrant-clay: #d95d39;
+    --warm-surface: #f9f6f0;
+    --muted-sage: #a8b2a6;
+
+    --base: 8px;
+    --gutter: 24px;
+    --section-gap: 120px;
+    --container-max: 1280px;
+    --margin-mobile: 18px;
+    --margin-desktop: 64px;
+  }
+
+  body {
+    @apply bg-background font-body-md text-on-surface antialiased;
+    background-color: #fcf9f8;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer utilities {
+  .deep-texture {
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0c16.568 0 30 13.432 30 30S46.568 60 30 60 0 46.568 0 30 13.432 0 30 0zm0 1c16.016 0 29 12.984 29 29S46.016 59 30 59 1 46.016 1 30 13.984 1 30 1z' fill='%231b3b36' fill-opacity='0.03'/%3E%3C/svg%3E");
+  }
+
+  .material-symbols-outlined {
+    font-variation-settings:
+      "FILL" 0,
+      "wght" 400,
+      "GRAD" 0,
+      "opsz" 24;
+  }
+
+  .reviews-marquee:hover .reviews-marquee-track {
+    animation-play-state: paused;
+  }
+
+  .reviews-marquee-left {
+    animation: reviews-marquee-left 40s linear infinite;
+  }
+
+  .reviews-marquee-right {
+    animation: reviews-marquee-right 45s linear infinite;
+  }
+}
+
+@keyframes reviews-marquee-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes reviews-marquee-right {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
