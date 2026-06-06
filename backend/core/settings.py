@@ -1,6 +1,8 @@
 import os
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
+
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -15,9 +17,30 @@ load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-change-me")
 
 # SECURITY WARNING: don't run with debug turned on in production!
+ENV = os.getenv("ENV", "development")
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+if ENV == "production":
+    DEBUG = False
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+
+def _build_allowed_hosts() -> list[str]:
+    hosts = ["localhost", "127.0.0.1", ".railway.app"]
+    for host in os.getenv("ALLOWED_HOSTS", "").split(","):
+        host = host.strip()
+        if host:
+            hosts.append(host)
+    railway_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN", "").strip()
+    if railway_domain:
+        hosts.append(railway_domain)
+    frontend_url = os.getenv("FRONTEND_URL", "").strip()
+    if frontend_url:
+        hostname = urlparse(frontend_url).hostname
+        if hostname:
+            hosts.append(hostname)
+    return list(dict.fromkeys(hosts))
+
+
+ALLOWED_HOSTS = _build_allowed_hosts()
 
 
 # Application definition
@@ -31,11 +54,13 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "corsheaders",
     "rest_framework",
+    "whitenoise.runserver_nostatic",
     "core_app",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -127,6 +152,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
