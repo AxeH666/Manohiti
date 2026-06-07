@@ -30,7 +30,7 @@ def schedule_booking_confirmation_email(booking_id: int) -> None:
             cwd=str(settings.BASE_DIR),
             env=os.environ.copy(),
             stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
             start_new_session=True,
         )
     except Exception:

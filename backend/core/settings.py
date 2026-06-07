@@ -184,11 +184,11 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_BACKEND = "core_app.email_backend.IPv4SMTPEmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv("GMAIL_USER")
 EMAIL_HOST_PASSWORD = os.getenv("GMAIL_APP_PASSWORD")
-EMAIL_TIMEOUT = 20
+EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "20"))
 DEFAULT_FROM_EMAIL = os.getenv("GMAIL_USER")

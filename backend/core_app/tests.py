@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import socket
 from datetime import date, time, timedelta
 from unittest.mock import MagicMock, patch
 
 from django.test import TestCase, override_settings
 
+from core_app.email_backend import IPv4SMTP
 from core_app.models import Booking, BookingStatus, NotificationLog
 from core_app.notifications import send_booking_confirmation, send_session_reminder
 from core_app.scheduler import process_session_reminders
@@ -62,6 +64,39 @@ class WhatsAppHelperTests(TestCase):
     def test_normalize_indian_mobile(self) -> None:
         self.assertEqual(normalize_phone_e164("9876543210"), "+919876543210")
         self.assertEqual(normalize_phone_e164("+919876543210"), "+919876543210")
+
+
+class IPv4SMTPTests(TestCase):
+    @patch("core_app.email_backend.socket.socket")
+    @patch("core_app.email_backend.socket.getaddrinfo")
+    def test_get_socket_resolves_ipv4_only(
+        self,
+        mock_getaddrinfo: MagicMock,
+        mock_socket_class: MagicMock,
+    ) -> None:
+        mock_getaddrinfo.return_value = [
+            (
+                socket.AF_INET,
+                socket.SOCK_STREAM,
+                socket.IPPROTO_TCP,
+                "",
+                ("142.250.0.108", 587),
+            )
+        ]
+        mock_socket = MagicMock()
+        mock_socket_class.return_value = mock_socket
+
+        smtp = IPv4SMTP()
+        result = smtp._get_socket("smtp.gmail.com", 587, 20)
+
+        self.assertEqual(result, mock_socket)
+        mock_getaddrinfo.assert_called_once_with(
+            "smtp.gmail.com",
+            587,
+            socket.AF_INET,
+            socket.SOCK_STREAM,
+        )
+        mock_socket.connect.assert_called_once_with(("142.250.0.108", 587))
 
 
 class NotificationTests(TestCase):
