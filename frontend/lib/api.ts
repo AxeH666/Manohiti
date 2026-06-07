@@ -1,6 +1,18 @@
 import axios from "axios";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+function normalizeApiBase(rawUrl: string | undefined): string {
+  const fallback = "http://localhost:8000";
+  const trimmed = (rawUrl ?? fallback).trim().replace(/\/$/, "");
+  if (!trimmed) {
+    return fallback;
+  }
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+}
+
+const API_BASE = normalizeApiBase(process.env.NEXT_PUBLIC_API_URL);
 
 const client = axios.create({
   baseURL: API_BASE,
