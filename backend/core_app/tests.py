@@ -113,7 +113,7 @@ class NotificationTests(TestCase):
             status=BookingStatus.CONFIRMED,
         )
 
-    @patch("core_app.notifications.EmailMessage.send")
+    @patch("core_app.notifications.send_email")
     def test_confirmation_sends_client_and_therapist_email(
         self, mock_send: MagicMock
     ) -> None:
@@ -134,7 +134,7 @@ class NotificationTests(TestCase):
         )
         self.assertEqual(therapist_logs.count(), 1)
 
-    @patch("core_app.notifications.EmailMessage.send")
+    @patch("core_app.notifications.send_email")
     def test_reminder_is_idempotent(self, mock_send: MagicMock) -> None:
         with patch.dict("os.environ", {"WHATSAPP_ENABLED": "False"}, clear=False):
             send_session_reminder(self.booking, "24h")
@@ -147,7 +147,7 @@ class NotificationTests(TestCase):
         self.assertEqual(mock_send.call_count, 2)
 
     @patch("core_app.notifications.send_whatsapp_text")
-    @patch("core_app.notifications.EmailMessage.send")
+    @patch("core_app.notifications.send_email")
     def test_whatsapp_skipped_when_disabled(
         self, mock_send: MagicMock, mock_wa: MagicMock
     ) -> None:
@@ -156,7 +156,7 @@ class NotificationTests(TestCase):
         mock_wa.assert_not_called()
 
     @patch("core_app.notifications.send_whatsapp_text", return_value=(True, ""))
-    @patch("core_app.notifications.EmailMessage.send")
+    @patch("core_app.notifications.send_email")
     def test_whatsapp_sent_when_enabled(
         self, mock_send: MagicMock, mock_wa: MagicMock
     ) -> None:

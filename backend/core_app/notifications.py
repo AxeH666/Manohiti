@@ -3,11 +3,9 @@ from __future__ import annotations
 import os
 from datetime import time
 
-from django.conf import settings
-from django.core.mail import EmailMessage, EmailMultiAlternatives
-
 from core_app.models import Booking, NotificationLog
 from core_app.services.calendar import build_google_calendar_url, build_ics_invite
+from core_app.services.email_delivery import send_email
 from core_app.services.whatsapp import is_whatsapp_enabled, send_whatsapp_text
 
 
@@ -64,25 +62,7 @@ def _send_email(
         return
 
     try:
-        if ics_content:
-            message = EmailMultiAlternatives(
-                subject=subject_display,
-                body=body,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[recipient],
-            )
-            message.attach_alternative(
-                ics_content,
-                "text/calendar; method=PUBLISH; charset=UTF-8",
-            )
-        else:
-            message = EmailMessage(
-                subject=subject_display,
-                body=body,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[recipient],
-            )
-        message.send(fail_silently=False)
+        send_email(recipient, subject_display, body, ics_content)
         _log_notification(booking, "email", recipient, subject_key, "sent")
     except Exception as exc:
         _log_notification(
@@ -113,7 +93,7 @@ def _send_whatsapp(
 def send_booking_confirmation(booking: Booking) -> None:
     therapist_email = os.getenv("THERAPIST_EMAIL", "")
     # ORGANIZER must match the sending Gmail account or clients reject the invite.
-    organizer = settings.DEFAULT_FROM_EMAIL or therapist_email or "heti3215@gmail.com"
+    organizer = os.getenv("EMAIL_FROM") or os.getenv("GMAIL_USER") or therapist_email or "heti3215@gmail.com"
     ics = build_ics_invite(booking, organizer)
     calendar_url = build_google_calendar_url(booking)
 
