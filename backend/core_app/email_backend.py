@@ -4,6 +4,7 @@ import socket
 import smtplib
 
 from django.core.mail.backends.smtp import EmailBackend
+from django.core.mail.utils import DNS_NAME
 
 
 class IPv4SMTP(smtplib.SMTP):
@@ -40,5 +41,33 @@ class IPv4SMTP(smtplib.SMTP):
         raise OSError(f"No IPv4 address found for SMTP host {host!r}")
 
 
+class IPv4SMTPSSL(smtplib.SMTP_SSL):
+    def _get_socket(
+        self,
+        host: str,
+        port: int,
+        timeout: float | None,
+    ) -> socket.socket:
+        raw_socket = IPv4SMTP._get_socket(self, host, port, timeout)
+        return self.context.wrap_socket(raw_socket, server_hostname=self._host)
+
+
 class IPv4SMTPEmailBackend(EmailBackend):
     connection_class = IPv4SMTP
+
+    def open(self) -> bool | None:
+        try:
+            return super().open()
+        except (OSError, smtplib.SMTPException):
+            self.connection = None
+            if self.use_ssl:
+                raise
+
+        connection_params: dict[str, object] = {
+            "local_hostname": DNS_NAME.get_fqdn(),
+            "timeout": self.timeout,
+        }
+        self.connection = IPv4SMTPSSL(self.host, 465, **connection_params)
+        if self.username and self.password:
+            self.connection.login(self.username, self.password)
+        return True
