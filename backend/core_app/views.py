@@ -5,6 +5,7 @@ from datetime import date, datetime
 import os
 
 import razorpay
+from django.db import transaction
 from rest_framework import status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import AllowAny
@@ -201,7 +202,11 @@ def create_booking(request: Request) -> Response:
             status=BookingStatus.CONFIRMED,
             razorpay_order_id="",
         )
-        run_in_background(_dispatch_booking_confirmation, booking.id)
+        transaction.on_commit(
+            lambda booking_id=booking.id: run_in_background(
+                _dispatch_booking_confirmation, booking_id
+            )
+        )
         response_payload = {
             "booking_id": booking.id,
             "razorpay_order_id": "",
@@ -290,7 +295,11 @@ def verify_booking_payment(request: Request) -> Response:
     booking.razorpay_payment_id = payload["razorpay_payment_id"]
     booking.razorpay_order_id = payload["razorpay_order_id"]
     booking.save(update_fields=["status", "razorpay_payment_id", "razorpay_order_id"])
-    run_in_background(_dispatch_booking_confirmation, booking.id)
+    transaction.on_commit(
+        lambda booking_id=booking.id: run_in_background(
+            _dispatch_booking_confirmation, booking_id
+        )
+    )
 
     response_serializer = BookingVerifyPaymentResponseSerializer(
         {"success": True, "booking_id": booking.id}
