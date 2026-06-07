@@ -22,9 +22,20 @@ DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 if ENV == "production":
     DEBUG = False
 
+PRODUCTION_ALLOWED_HOSTS = [
+    "manohiti.com",
+    "www.manohiti.com",
+]
+
+PRODUCTION_CORS_ORIGINS = [
+    "https://manohiti.com",
+    "https://www.manohiti.com",
+    "https://manohiti.vercel.app",
+]
+
 
 def _build_allowed_hosts() -> list[str]:
-    hosts = ["localhost", "127.0.0.1", ".railway.app"]
+    hosts = ["localhost", "127.0.0.1", ".railway.app", *PRODUCTION_ALLOWED_HOSTS]
     for host in os.getenv("ALLOWED_HOSTS", "").split(","):
         host = host.strip()
         if host:
@@ -38,6 +49,18 @@ def _build_allowed_hosts() -> list[str]:
         if hostname:
             hosts.append(hostname)
     return list(dict.fromkeys(hosts))
+
+
+def _build_cors_allowed_origins() -> list[str]:
+    origins = ["http://localhost:3000", *PRODUCTION_CORS_ORIGINS]
+    frontend_url = os.getenv("FRONTEND_URL", "").strip().rstrip("/")
+    if frontend_url:
+        origins.append(frontend_url)
+    for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(","):
+        origin = origin.strip().rstrip("/")
+        if origin:
+            origins.append(origin)
+    return list(dict.fromkeys(origins))
 
 
 ALLOWED_HOSTS = _build_allowed_hosts()
@@ -111,10 +134,11 @@ if "test" in sys.argv:
         "NAME": ":memory:",
     }
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    os.getenv("FRONTEND_URL", "http://localhost:3000"),
-]
+CORS_ALLOWED_ORIGINS = _build_cors_allowed_origins()
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
+
+if ENV == "production":
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 
 # Password validation
