@@ -1,29 +1,39 @@
 from __future__ import annotations
 
 import logging
-import threading
-from collections.abc import Callable
-from typing import ParamSpec, TypeVar
+import os
+import subprocess
+import sys
+from pathlib import Path
 
-from django.db import close_old_connections
-
-P = ParamSpec("P")
-T = TypeVar("T")
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
 
-def run_in_background(func: Callable[P, T], *args: P.args, **kwargs: P.kwargs) -> None:
-    """Run a callable in a daemon thread so HTTP responses are not blocked."""
+def schedule_booking_confirmation_email(booking_id: int) -> None:
+    """
+    Send confirmation email in a separate process.
 
-    def _wrapper() -> None:
-        close_old_connections()
-        try:
-            func(*args, **kwargs)
-        except Exception:
-            logger.exception("Background task failed: %s", func.__name__)
-        finally:
-            close_old_connections()
-
-    thread = threading.Thread(target=_wrapper, daemon=True)
-    thread.start()
+    Gunicorn daemon threads cannot reliably reach Gmail SMTP on Railway
+    ([Errno 101] Network is unreachable). A child process matches CLI behaviour.
+    """
+    manage_py = Path(settings.BASE_DIR) / "manage.py"
+    try:
+        subprocess.Popen(
+            [
+                sys.executable,
+                str(manage_py),
+                "send_booking_confirmation_email",
+                str(booking_id),
+            ],
+            cwd=str(settings.BASE_DIR),
+            env=os.environ.copy(),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            start_new_session=True,
+        )
+    except Exception:
+        logger.exception(
+            "Failed to spawn booking confirmation email for booking %s", booking_id
+        )

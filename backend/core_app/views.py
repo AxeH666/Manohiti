@@ -12,9 +12,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from .notifications import send_booking_confirmation
 from .models import AvailabilitySlot, Booking, BookingStatus, Review, TherapistProfile
-from .services.async_tasks import run_in_background
+from .services.async_tasks import schedule_booking_confirmation_email
 from .serializers import (
     AvailableDateSerializer,
     AvailableSlotSerializer,
@@ -134,14 +133,6 @@ def available_dates(request: Request) -> Response:
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-def _dispatch_booking_confirmation(booking_id: int) -> None:
-    try:
-        booking = Booking.objects.get(id=booking_id)
-    except Booking.DoesNotExist:
-        return
-    send_booking_confirmation(booking)
-
-
 def _booking_create_payload(booking: Booking, **extra: object) -> dict[str, object]:
     return {
         "booking_id": booking.id,
@@ -213,8 +204,8 @@ def create_booking(request: Request) -> Response:
             razorpay_order_id="",
         )
         transaction.on_commit(
-            lambda booking_id=booking.id: run_in_background(
-                _dispatch_booking_confirmation, booking_id
+            lambda booking_id=booking.id: schedule_booking_confirmation_email(
+                booking_id
             )
         )
         response_payload = _booking_create_payload(
@@ -307,9 +298,7 @@ def verify_booking_payment(request: Request) -> Response:
     booking.razorpay_order_id = payload["razorpay_order_id"]
     booking.save(update_fields=["status", "razorpay_payment_id", "razorpay_order_id"])
     transaction.on_commit(
-        lambda booking_id=booking.id: run_in_background(
-            _dispatch_booking_confirmation, booking_id
-        )
+        lambda booking_id=booking.id: schedule_booking_confirmation_email(booking_id)
     )
 
     response_serializer = BookingVerifyPaymentResponseSerializer(
