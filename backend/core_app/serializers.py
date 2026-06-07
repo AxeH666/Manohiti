@@ -32,6 +32,8 @@ class BookingCreateRequestSerializer(serializers.Serializer):
 
 class BookingCreateResponseSerializer(serializers.Serializer):
     booking_id = serializers.IntegerField()
+    slot_date = serializers.DateField()
+    slot_time = serializers.TimeField()
     razorpay_order_id = serializers.CharField(allow_blank=True)
     razorpay_key_id = serializers.CharField(allow_blank=True)
     amount = serializers.IntegerField()

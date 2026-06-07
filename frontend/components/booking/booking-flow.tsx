@@ -245,6 +245,16 @@ export function BookingFlow(): JSX.Element {
     };
   }, [selectedDate, selectedSlot]);
 
+  const confirmedSummary = useMemo(() => {
+    if (bookingResult?.slot_date && bookingResult?.slot_time) {
+      return {
+        date: formatDateLabel(bookingResult.slot_date),
+        time: formatTimeLabel(bookingResult.slot_time),
+      };
+    }
+    return summary;
+  }, [bookingResult, summary]);
+
   return (
     <div className="mx-auto max-w-container-max">
       <nav
@@ -380,7 +390,10 @@ export function BookingFlow(): JSX.Element {
             <button
               className="font-label-bold text-label-bold text-vibrant-clay underline-offset-4 hover:underline"
               disabled={loading}
-              onClick={() => setStep("date")}
+              onClick={() => {
+                setSelectedSlot(null);
+                setStep("date");
+              }}
               type="button"
             >
               Change date
@@ -596,7 +609,7 @@ export function BookingFlow(): JSX.Element {
         </section>
       )}
 
-      {step === "confirmation" && summary && bookingResult && (
+      {step === "confirmation" && confirmedSummary && bookingResult && (
         <section className="text-center">
           <div className="mx-auto mb-gutter flex h-16 w-16 items-center justify-center rounded-full bg-vibrant-clay/10">
             <span className="material-symbols-outlined text-3xl text-vibrant-clay">
@@ -607,7 +620,7 @@ export function BookingFlow(): JSX.Element {
             You&apos;re booked
           </h2>
           <p className="mx-auto mb-base max-w-lg font-body-lg text-body-lg text-on-surface-variant">
-            {summary.date} at {summary.time} IST
+            {confirmedSummary.date} at {confirmedSummary.time} IST
           </p>
           <p className="mx-auto mb-gutter max-w-lg font-body-md text-on-surface-variant">
             Check your email for details.

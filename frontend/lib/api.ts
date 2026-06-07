@@ -41,6 +41,8 @@ export type BookingCreatePayload = {
 
 export type BookingCreateResponse = {
   booking_id: number;
+  slot_date: string;
+  slot_time: string;
   razorpay_order_id: string;
   razorpay_key_id: string;
   amount: number;

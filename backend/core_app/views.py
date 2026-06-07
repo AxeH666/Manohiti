@@ -14,7 +14,6 @@ from rest_framework.response import Response
 
 from .notifications import send_booking_confirmation
 from .models import AvailabilitySlot, Booking, BookingStatus, Review, TherapistProfile
-from .services.async_tasks import run_in_background
 from .serializers import (
     AvailableDateSerializer,
     AvailableSlotSerializer,
@@ -142,6 +141,15 @@ def _dispatch_booking_confirmation(booking_id: int) -> None:
     send_booking_confirmation(booking)
 
 
+def _booking_create_payload(booking: Booking, **extra: object) -> dict[str, object]:
+    return {
+        "booking_id": booking.id,
+        "slot_date": booking.slot_date,
+        "slot_time": booking.slot_time,
+        **extra,
+    }
+
+
 @api_view(["POST"])
 @authentication_classes([])
 @permission_classes([AllowAny])
@@ -203,18 +211,16 @@ def create_booking(request: Request) -> Response:
             razorpay_order_id="",
         )
         transaction.on_commit(
-            lambda booking_id=booking.id: run_in_background(
-                _dispatch_booking_confirmation, booking_id
-            )
+            lambda booking_id=booking.id: _dispatch_booking_confirmation(booking_id)
         )
-        response_payload = {
-            "booking_id": booking.id,
-            "razorpay_order_id": "",
-            "razorpay_key_id": "",
-            "amount": 0,
-            "currency": currency,
-            "is_pro_bono": True,
-        }
+        response_payload = _booking_create_payload(
+            booking,
+            razorpay_order_id="",
+            razorpay_key_id="",
+            amount=0,
+            currency=currency,
+            is_pro_bono=True,
+        )
         response_serializer = BookingCreateResponseSerializer(response_payload)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -244,14 +250,14 @@ def create_booking(request: Request) -> Response:
         razorpay_order_id=razorpay_order_id,
     )
 
-    response_payload = {
-        "booking_id": booking.id,
-        "razorpay_order_id": razorpay_order_id,
-        "razorpay_key_id": razorpay_key_id,
-        "amount": amount_paise,
-        "currency": currency,
-        "is_pro_bono": False,
-    }
+    response_payload = _booking_create_payload(
+        booking,
+        razorpay_order_id=razorpay_order_id,
+        razorpay_key_id=razorpay_key_id,
+        amount=amount_paise,
+        currency=currency,
+        is_pro_bono=False,
+    )
     response_serializer = BookingCreateResponseSerializer(response_payload)
     return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -296,9 +302,7 @@ def verify_booking_payment(request: Request) -> Response:
     booking.razorpay_order_id = payload["razorpay_order_id"]
     booking.save(update_fields=["status", "razorpay_payment_id", "razorpay_order_id"])
     transaction.on_commit(
-        lambda booking_id=booking.id: run_in_background(
-            _dispatch_booking_confirmation, booking_id
-        )
+        lambda booking_id=booking.id: _dispatch_booking_confirmation(booking_id)
     )
 
     response_serializer = BookingVerifyPaymentResponseSerializer(
