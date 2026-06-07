@@ -14,6 +14,7 @@ from rest_framework.response import Response
 
 from .notifications import send_booking_confirmation
 from .models import AvailabilitySlot, Booking, BookingStatus, Review, TherapistProfile
+from .services.async_tasks import run_in_background
 from .serializers import (
     AvailableDateSerializer,
     AvailableSlotSerializer,
@@ -153,6 +154,7 @@ def _booking_create_payload(booking: Booking, **extra: object) -> dict[str, obje
 @api_view(["POST"])
 @authentication_classes([])
 @permission_classes([AllowAny])
+@transaction.atomic
 def create_booking(request: Request) -> Response:
     serializer = BookingCreateRequestSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -211,7 +213,9 @@ def create_booking(request: Request) -> Response:
             razorpay_order_id="",
         )
         transaction.on_commit(
-            lambda booking_id=booking.id: _dispatch_booking_confirmation(booking_id)
+            lambda booking_id=booking.id: run_in_background(
+                _dispatch_booking_confirmation, booking_id
+            )
         )
         response_payload = _booking_create_payload(
             booking,
@@ -265,6 +269,7 @@ def create_booking(request: Request) -> Response:
 @api_view(["POST"])
 @authentication_classes([])
 @permission_classes([AllowAny])
+@transaction.atomic
 def verify_booking_payment(request: Request) -> Response:
     serializer = BookingVerifyPaymentRequestSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -302,7 +307,9 @@ def verify_booking_payment(request: Request) -> Response:
     booking.razorpay_order_id = payload["razorpay_order_id"]
     booking.save(update_fields=["status", "razorpay_payment_id", "razorpay_order_id"])
     transaction.on_commit(
-        lambda booking_id=booking.id: _dispatch_booking_confirmation(booking_id)
+        lambda booking_id=booking.id: run_in_background(
+            _dispatch_booking_confirmation, booking_id
+        )
     )
 
     response_serializer = BookingVerifyPaymentResponseSerializer(
